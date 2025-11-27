@@ -1,30 +1,41 @@
-from pydantic import BaseModel
-from datetime import datetime
-from pydantic_core import core_schema
 from bson import ObjectId
-from typing import Any
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic_core import core_schema
+from pydantic.json_schema import JsonSchemaValue
+from typing import Annotated, Any
 
-class PyObjectId(str):
+class ObjectIdPydanticAnnotation:
   @classmethod
-  def __get_pydantic_core_schema__(
-      cls, _source_type: Any, _handler: Any
-  ) -> core_schema.CoreSchema:
-    return core_schema.json_or_python_schema(
-      json_schema=core_schema.str_schema(),
-      python_schema=core_schema.union_schema([
-        core_schema.is_instance_schema(ObjectId),
-        core_schema.chain_schema([
-          core_schema.str_schema(),
-          core_schema.no_info_plain_validator_function(cls.validate),
-        ])
-      ]),
-      serialization=core_schema.plain_serializer_function_ser_schema(
-        lambda x: str(x)
-      ),
+  def validate_object_id(cls, v: Any, handler) -> ObjectId:
+    if isinstance(v, ObjectId):
+      return v
+    s = handler(v)
+    if ObjectId.is_valid(s):
+      return ObjectId(s)
+    else:
+      raise ValueError("Invalid ObjectId")
+
+  @classmethod
+  def __get_pydantic_core_schema__(cls, source_type, _handler) -> core_schema.CoreSchema:
+    assert source_type is ObjectId
+    return core_schema.no_info_wrap_validator_function(
+      cls.validate_object_id, 
+      core_schema.str_schema(), 
+      serialization=core_schema.to_string_ser_schema(),
     )
 
   @classmethod
-  def validate(cls, value) -> ObjectId:
-    if not ObjectId.is_valid(value):
-      raise ValueError("Invalid ObjectId")
-    return ObjectId(value)
+  def __get_pydantic_json_schema__(cls, _core_schema, handler) -> JsonSchemaValue:
+    return handler(core_schema.str_schema())
+
+
+PyObjectId = Annotated[ObjectId, ObjectIdPydanticAnnotation]
+
+class MongoBaseModel(BaseModel):
+  id: PyObjectId = Field(default=None, alias="_id")
+  model_config = ConfigDict(
+    populate_by_name=True,
+    validate_default=True,
+    arbitrary_types_allowed=True,
+    json_encoders={ObjectId: str},
+  )

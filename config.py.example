@@ -1,0 +1,6 @@
+MONGO_GOOSE_MAIN_PWD = "********"
+MONGO_GOOSE_MAIN_DB = "goose_origin"
+MONGODB_CONNECTION_STRING=f"mongodb+srv://goosedbadmin:{MONGO_GOOSE_MAIN_PWD}@goose-origin.e4xar0b.mongodb.net/?appName=goose-origin"
+SECRET_KEY = "********************"
+JWT_AUTH_ALGORITHM = "HS256"
+DEBUG=True

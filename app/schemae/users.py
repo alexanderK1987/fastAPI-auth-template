@@ -1,13 +1,12 @@
 import pytz
 from bson import ObjectId
-from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
+from pydantic import EmailStr, Field
 from typing import Optional
-from pydantic import BaseModel
-from app.schemae.common import PyObjectId
+from app.schemae.common import MongoBaseModel, PyObjectId
 
-class UserInfoModel(BaseModel):
-  id: Optional[PyObjectId] = Field(default=None, alias="_id")
+class UserInfoModel(MongoBaseModel):
+  id: PyObjectId = None
   nickname: Optional[str]
   email: EmailStr
   created_at: datetime = Field(default_factory=lambda: datetime.now(pytz.UTC))
